@@ -19,6 +19,7 @@ import {
   requiredCount,
   requiredReady,
   mergeShared,
+  demoSession,
   saveResultLocal,
   saveSession,
   uid,
@@ -47,14 +48,15 @@ const GROUPS: Record<string, { title: string; note: string }> = {
   b: { title: "두 번째 사람", note: "가족·룸메이트처럼 같이 살 사람의 생일이에요." },
 };
 
-const TEST_META: Record<TestId, { title: string; blurb: string; why: string; required: boolean; art: string; formArt: string; badge: string; submit: string; fields: Field[] }> = {
+const TEST_META: Record<TestId, { title: string; blurb: string; why: string; gets: string; required: boolean; art: string; formArt: string; badge: string; submit: string; fields: Field[] }> = {
   saju: {
     title: "사주 케미",
-    blurb: "생일로 보는 나와 펫의 어울림.",
-    why: "내 생일과 펫 정보로 사주 케미를 봐요. 펫 생일을 모르면, 고른 종의 기본 성향으로 추정해요.",
+    blurb: "끝나면 나와 펫 케미 점수가 나와요.",
+    why: "내 생일과 펫 정보로 사주 점수를 내요. 이 점수가 조화도 40%가 돼요.",
+    gets: "사주 케미 점수 · 조화도 40%",
     required: true,
-    art: "/assets/webp/mode-saju.webp",
-    formArt: "/assets/webp/mode-saju.webp",
+    art: "/assets/crayon/saju.svg",
+    formArt: "/assets/crayon/saju.svg",
     badge: "꼭 보기",
     submit: "사주 케미 보기",
     fields: [
@@ -68,33 +70,36 @@ const TEST_META: Record<TestId, { title: string; blurb: string; why: string; req
   },
   style: {
     title: "보호자 스타일",
-    blurb: "세 질문으로 가볍게 알아봐요.",
-    why: "정답이 있는 질문이 아니에요. 펫과 살 때 드러나는 내 리듬을 세 가지로 나눠 봐요.",
+    blurb: "끝나면 내 돌봄 버릇이 한줄로 나와요.",
+    why: "세 질문에 답하면 보호자 스타일 점수가 나와요. 이 점수가 조화도 20%가 돼요.",
+    gets: "돌봄 버릇 한줄 · 조화도 20%",
     required: true,
-    art: "/assets/webp/mode-style.webp",
-    formArt: "/assets/webp/mode-style.webp",
+    art: "/assets/crayon/style.svg",
+    formArt: "/assets/crayon/style.svg",
     badge: "꼭 보기",
     submit: "내 스타일 보기",
     fields: [],
   },
   lifestyle: {
     title: "생활 준비",
-    blurb: "시간·활동·루틴이 이 친구와 맞는지 살펴봐요.",
-    why: "하루에 얼마나 함께할 수 있는지, 어떤 활동을 좋아하는지, 돌봄을 어떻게 만드는지 봐요.",
+    blurb: "끝나면 시간·산책이 맞는지 점수가 나와요.",
+    why: "함께할 시간·활동·루틴을 고르면 생활 점수가 나와요. 이 점수가 조화도 30%가 돼요.",
+    gets: "생활 점수 · 조화도 30%",
     required: true,
-    art: "/assets/webp/mode-lifestyle.webp",
-    formArt: "/assets/webp/mode-lifestyle.webp",
+    art: "/assets/crayon/lifestyle.svg",
+    formArt: "/assets/crayon/lifestyle.svg",
     badge: "꼭 보기",
     submit: "생활 준비 보기",
     fields: [],
   },
   dogcat: {
     title: "강아지와 고양이",
-    blurb: "나와 더 맞는 쪽을 점수로 비교해요.",
-    why: "같은 내 생일로 강아지와 고양이를 나란히 봐요. 후보 생일을 몰라도 종 기본 성향으로 먼저 비교해요.",
+    blurb: "끝나면 누가 더 맞는지 비교 점수가 나와요.",
+    why: "같은 내 생일로 강아지와 고양이를 나란히 봐요. 하면 조화도에 보너스가 조금 붙어요.",
+    gets: "견 vs 묘 비교 점수 · 선택 보너스",
     required: false,
-    art: "/assets/webp/mode-dogcat.webp",
-    formArt: "/assets/webp/mode-dogcat.webp",
+    art: "/assets/crayon/dogcat.svg",
+    formArt: "/assets/crayon/dogcat.svg",
     badge: "더 보기",
     submit: "비교 결과 보기",
     fields: [
@@ -106,11 +111,12 @@ const TEST_META: Record<TestId, { title: string; blurb: string; why: string; req
   },
   triangle: {
     title: "세 식구",
-    blurb: "두 사람과 펫, 어디서 어긋나는지 한눈에.",
-    why: "사람끼리, 그리고 각 사람과 펫 사이. 세 관계 중 어디가 약한지 봐요.",
+    blurb: "끝나면 세 관계 중 약한 곳이 나와요.",
+    why: "두 사람과 펫 사이, 어디가 약한지 봐요. 하면 조화도에 보너스가 조금 붙어요.",
+    gets: "약한 관계 표시 · 선택 보너스",
     required: false,
-    art: "/assets/webp/mode-triangle.webp",
-    formArt: "/assets/webp/mode-triangle.webp",
+    art: "/assets/crayon/triangle.svg",
+    formArt: "/assets/crayon/triangle.svg",
     badge: "더 보기",
     submit: "세 식구 보기",
     fields: [
@@ -234,6 +240,12 @@ export function PetAudition() {
       setNotice("");
       go(`#/test/${next.resultId}/${first}`);
     }
+  };
+
+  const startDemo = () => {
+    const next = demoSession();
+    persist(next);
+    go("#/result/" + next.resultId);
   };
 
   const openHub = () => {
@@ -432,11 +444,7 @@ export function PetAudition() {
 
   return (
     <>
-      <div className="page-bg" aria-hidden>
-        <img className="page-bg-paper" src="/assets/webp/paper-hanji.webp" alt="" />
-        <img className="page-bg-window" src="/assets/webp/bg-window.webp" alt="" />
-        <img className="page-bg-plant" src="/assets/webp/deco-plant.webp" alt="" />
-      </div>
+      <div className="page-bg" aria-hidden />
       <div className="wrap">
         <header className="site-header">
           <a
@@ -480,90 +488,83 @@ export function PetAudition() {
           <section>
             <div className="home-hero">
               <div className="hero-copy">
-                <span className="eyebrow">3분이면 점수</span>
-                <h1>우리 집 강아지·고양이, 잘 맞을까요?</h1>
-                <p className="lead">생일만 있으면 바로 볼 수 있어요. 가입 없이, 점수는 무료예요.</p>
+                <span className="eyebrow">끝나면 점수가 나와요</span>
+                <h1>우리 집, 잘 맞는지 숫자로</h1>
+                <p className="lead">세 가지만 보면 조화도가 열려요. 가입 없이 총점은 무료예요.</p>
                 <div className="hero-meta">
-                  <span>바로 시작</span>
-                  <span>무료 점수</span>
-                  <span>결제는 나중에</span>
+                  <span>총점 무료</span>
+                  <span>한줄 해석</span>
+                  <span>팁은 나중에</span>
                 </div>
                 <button className="hero-cta" type="button" onClick={startAudition}>
-                  {session && doneCount > 0 ? `이어서 하기 · ${progressLabel}` : "바로 해보기"}
+                  {session && doneCount > 0 ? `이어서 하기 · ${progressLabel}` : "내 점수 보기"}
                   <span aria-hidden> →</span>
                 </button>
-                <p className="hero-sub">사주 · 스타일 · 생활 세 가지면 조화도까지</p>
+                <button className="hero-demo" type="button" onClick={startDemo}>
+                  샘플로 먼저 결과 보기
+                </button>
+                <p className="hero-sub">사주 40% · 생활 30% · 스타일 20%로 한 점수가 돼요</p>
               </div>
               <div className="hero-art" aria-hidden>
                 <div className="hero-art-glow" />
                 <picture>
-                  <img src="/assets/webp/pet-harmony-hero.webp" alt="" />
+                  <img src="/assets/crayon/hero.svg" alt="" />
                 </picture>
               </div>
             </div>
-            <section className="sample-preview">
-              <div className="sample-copy">
-                <span className="eyebrow">미리보기</span>
-                <h2>끝나면 점수가 나와요</h2>
-                <p>중간마다 짧게 보고, 마지막에 한눈에. 가입은 없어요.</p>
-                <img className="sample-art" src="/assets/webp/sample-family.webp" alt="" />
+            <section className="outcome-board" aria-label="결과 미리보기">
+              <div className="outcome-visual">
+                <span className="eyebrow">손에 쥐는 것</span>
+                <h2>실제 결과 화면이에요</h2>
+                <p>세 가지를 모으면 내 숫자로 바뀌어요. 아래는 샘플입니다.</p>
+                <img src="/assets/crayon/score.svg" alt="" />
               </div>
-              <div className="sample-score">
-                <span>조화도 샘플</span>
-                <strong>
-                  82<span>점</span>
-                </strong>
-                <div className="sample-meter">
-                  <i />
-                </div>
-                <b>사주 · 스타일 · 생활을 이은 점수</b>
-                <small>평생 / 오늘 / 이번 달 / 올해 흐름도 여기서 봐요</small>
-              </div>
+              <OutcomeCard />
             </section>
             <section className="what-you-get">
               <div className="what-you-get-heading">
-                <span className="eyebrow">하는 법</span>
-                <h2>세 번만 답하면 끝</h2>
-                <p>생일, 나와 펫의 리듬, 하루 루틴. 그다음 점수가 열려요.</p>
+                <span className="eyebrow">점수가 모이는 법</span>
+                <h2>세 조각이 조화도 한 점이 돼요</h2>
+                <p>중간마다 짧은 점수를 보고, 마지막에 합쳐요. 입력은 각 조각에서만 받아요.</p>
               </div>
               <div className="journey-grid">
                 <div className="journey-item">
-                  <img src="/assets/webp/journey-look.webp" alt="" />
-                  <b>1</b>
-                  <strong>세 가지 보기</strong>
-                  <span>사주 케미, 보호자 스타일, 생활 준비를 하나씩 짧게</span>
+                  <img src="/assets/crayon/saju.svg" alt="" />
+                  <b>1 · 사주 40%</b>
+                  <strong>케미 점수</strong>
+                  <span>내 생일과 펫 정보. 끝나면 사주 점수가 나와요.</span>
                 </div>
                 <div className="journey-item">
-                  <img src="/assets/webp/sample-family.webp" alt="" />
-                  <b>2</b>
-                  <strong>조화도</strong>
-                  <span>세 가지를 이은 우리 집 점수와 기간별 흐름</span>
+                  <img src="/assets/crayon/style.svg" alt="" />
+                  <b>2 · 스타일 20%</b>
+                  <strong>돌봄 한줄</strong>
+                  <span>세 질문. 끝나면 내 버릇이 한줄로 나와요.</span>
                 </div>
                 <div className="journey-item">
-                  <img src="/assets/webp/pay-pdf.webp" alt="" />
-                  <b>3</b>
-                  <strong>한 장으로</strong>
-                  <span>상세 팁과 사진 리포트는 조화도가 열린 뒤에만</span>
+                  <img src="/assets/crayon/lifestyle.svg" alt="" />
+                  <b>3 · 생활 30%</b>
+                  <strong>시간·산책 점수</strong>
+                  <span>루틴 세 칸. 끝나면 생활 점수가 나와요.</span>
                 </div>
               </div>
               <div className="price-cards">
                 <div className="price-card">
-                  <img src="/assets/webp/pay-free.webp" alt="" />
-                  <b>무료 점수</b>
+                  <img src="/assets/crayon/free.svg" alt="" />
+                  <b>무료로 열리는 것</b>
                   <strong>$0</strong>
-                  <span>총점과 한줄. 가입 없이 바로.</span>
+                  <span>총점, 한줄, 평생·오늘·월·년 흐름. 샘플에 보이는 그 화면.</span>
                 </div>
                 <div className="price-card">
-                  <img src="/assets/webp/pay-tips.webp" alt="" />
-                  <b>케어팁</b>
+                  <img src="/assets/crayon/tips.svg" alt="" />
+                  <b>잠긴 네 줄</b>
                   <strong>$0.99</strong>
-                  <span>놀이·식사·산책·휴식 + 사주 풀이. 한 번만.</span>
+                  <span>놀이·식사·산책·휴식. 우리 집 점수에 맞춘 법.</span>
                 </div>
                 <div className="price-card featured">
-                  <img src="/assets/webp/pay-pdf.webp" alt="" />
-                  <b>사진 리포트</b>
+                  <img src="/assets/crayon/pdf.svg" alt="" />
+                  <b>한 장으로 저장</b>
                   <strong>$3.99</strong>
-                  <span>팁 포함. 사진 넣고 한 장으로 간직.</span>
+                  <span>팁 포함. 사진 넣고 인쇄·PDF.</span>
                 </div>
               </div>
             </section>
@@ -584,9 +585,10 @@ export function PetAudition() {
             <button className="back" type="button" onClick={() => go("")}>
               <ArrowLeft size={14} /> 홈
             </button>
-            <span className="eyebrow">전체</span>
-            <h1>무엇을 볼까요</h1>
-            <p className="lead form-lead">꼭 볼 세 가지를 마치면 조화도가 열려요. 더 보기는 안 해도 점수가 깎이지 않아요.</p>
+            <span className="eyebrow">조화도까지</span>
+            <h1>세 가지를 모으면 총점이 나와요</h1>
+            <p className="lead form-lead">아래가 열리는 화면이에요. 꼭 보기만 채우면 됩니다. 더 보기는 안 해도 총점이 깎이지 않아요.</p>
+            <OutcomeCard compact />
             <div className="hub-progress" aria-label={progressLabel}>
               {REQUIRED_TESTS.map((id) => (
                 <i key={id} className={isDone(session, id) ? "on" : ""} />
@@ -613,11 +615,11 @@ export function PetAudition() {
             >
               {ready ? (
                 <>
-                  조화도 보기 <ChevronRight size={18} />
+                  내 조화도 보기 · 총점 <ChevronRight size={18} />
                 </>
               ) : (
                 <>
-                  <Lock size={16} /> 조화도 보기 · 세 가지를 먼저 봐 주세요
+                  <Lock size={16} /> 조화도 잠김 · {3 - requiredCount(session)}개 남음
                 </>
               )}
             </button>
@@ -648,6 +650,7 @@ export function PetAudition() {
                 <span className="badge">{TEST_META[testId].badge}</span>
                 <h1>{TEST_META[testId].title}</h1>
                 <p className="lead form-lead">{TEST_META[testId].why}</p>
+                <p className="form-gets">끝나면 {TEST_META[testId].gets}</p>
               </div>
               <div className="form-art" aria-hidden>
                 <img src={TEST_META[testId].formArt} alt="" />
@@ -680,6 +683,11 @@ export function PetAudition() {
               <ArrowLeft size={14} /> 다시 입력
             </button>
             <span className="badge">{TEST_META[testId].badge} · {progressLabel}</span>
+            <p className="mid-dest">
+              {ready
+                ? "세 가지가 모였어요. 이제 우리 집 총점을 볼 수 있어요."
+                : `이건 ${TEST_META[testId].title} 결과예요. 꼭 보기 ${requiredCount(session)} / 3 · 모이면 조화도가 열려요.`}
+            </p>
             <h1>{String(midResult.free.headline)}</h1>
             {midResult.free.estimatedSpecies ? (
               <span className="pill">추정 · {midResult.free.estimatedSpecies === "cat" ? "고양이" : "강아지"} 기본 성향</span>
@@ -696,7 +704,11 @@ export function PetAudition() {
             <p className="score-sub" style={{ fontWeight: 600, color: "var(--accent-dark)" }}>
               {String(midResult.free.sajuTeaser || "")}
             </p>
-            <p className="upsell-nudge">조화도에서 놀이·식사·산책·휴식을 어떻게 맞출지 열어볼 수 있어요. 점수는 지금 무료예요.</p>
+            <p className="upsell-nudge">
+              {ready
+                ? "조화도에서 총점과 기간 흐름을 보고, 원하면 놀이·식사·산책·휴식을 열 수 있어요."
+                : "지금은 조각 점수예요. 세 가지를 모아야 우리 집 조화도가 나와요."}
+            </p>
             {notice && (
               <p className="form-tip" role="alert">
                 {notice}
@@ -723,13 +735,14 @@ export function PetAudition() {
           <section id="view-result" style={{ position: "relative" }}>
             <div className="result-confetti" aria-hidden>
               <picture>
-                <img src="/assets/webp/pay-free.webp" alt="" />
+                <img src="/assets/crayon/free.svg" alt="" />
               </picture>
             </div>
             <button className="back" type="button" onClick={() => go(session ? "#/hub/" + session.resultId : "")}>
               <ArrowLeft size={14} /> 전체
             </button>
             <span className="badge">{result.title}</span>
+            <p className="harmony-kicker">세 가지를 합친 우리 집 점수</p>
             <h1>{String(result.free.headline)}</h1>
             {result.free.estimatedSpecies ? (
               <span className="pill">추정 · {result.free.estimatedSpecies === "cat" ? "고양이" : "강아지"} 기본 성향</span>
@@ -748,7 +761,7 @@ export function PetAudition() {
             </div>
             <p className="weight-note">사주 40% · 생활 30% · 스타일 20% · 더 보기 보너스 최대 10%</p>
             <div className="harmony-hero" aria-hidden>
-              <img src="/assets/webp/sample-family.webp" alt="" />
+              <img src="/assets/crayon/family.svg" alt="" />
             </div>
             {!!(result.free.badges as string[] | undefined)?.length && (
               <div className="badge-row">
@@ -817,9 +830,9 @@ export function PetAudition() {
             {!result.pdfPaid && (
               <div className="pdf-actions" id="pdf-offer">
                 <div className="final-step">
-                  <img className="pay-art" src="/assets/webp/pay-pdf.webp" alt="" />
+                  <img className="pay-art" src="/assets/crayon/pdf.svg" alt="" />
                   <b>사진 리포트 · $3.99</b>
-                  <p>케어팁을 포함하고, 사진을 넣어 한 장으로 남길 수 있어요. 한 번만 · 구독 아님.</p>
+                  <p>지금 본 총점과 팁을 사진과 함께 한 장으로 남길 수 있어요. 한 번만 · 구독 아님.</p>
                   <label htmlFor="petPhoto">새 가족 사진 업로드 (선택, 결제 전에도 미리 넣기)</label>
                   <input
                     id="petPhoto"
@@ -857,7 +870,7 @@ export function PetAudition() {
             {result.pdfPaid && (
               <div className="pdf-actions" id="pdf-offer">
                 <div className="final-step">
-                  <img className="pay-art" src="/assets/webp/pay-pdf.webp" alt="" />
+                  <img className="pay-art" src="/assets/crayon/pdf.svg" alt="" />
                   <b>사진을 넣고 우리 이야기를 한 장으로 간직해요</b>
                   <label htmlFor="petPhotoPaid">새 가족 사진 업로드 (선택)</label>
                   <input
@@ -1077,6 +1090,74 @@ function FieldInput({
   );
 }
 
+function OutcomeCard({ compact = false }: { compact?: boolean }) {
+  return (
+    <aside className={`outcome-card${compact ? " compact" : ""}`} aria-label="결과 미리보기">
+      <div className="outcome-score">
+        <span>우리 집 조화도 · 샘플</span>
+        <strong>
+          82<span>점</span>
+        </strong>
+        <p>산책 좋아하는 나와, 활발한 강아지가 잘 맞아요</p>
+      </div>
+      <div className="outcome-mix" aria-hidden>
+        <span>
+          <b>사주</b> 86
+        </span>
+        <span>
+          <b>생활</b> 80
+        </span>
+        <span>
+          <b>스타일</b> 74
+        </span>
+      </div>
+      <div className="outcome-tabs" aria-hidden>
+        <em className="on">평생 82</em>
+        <em>오늘 79</em>
+        <em>이번 달 81</em>
+        <em>올해 80</em>
+      </div>
+      {!compact && (
+        <>
+          <ul className="outcome-care">
+            <li>
+              <b>놀이</b>
+              <i>A</i>
+              <em className="lock-blur">이렇게 맞추면 좋아요</em>
+            </li>
+            <li>
+              <b>식사</b>
+              <i>B</i>
+              <em className="lock-blur">이렇게 맞추면 좋아요</em>
+            </li>
+            <li>
+              <b>산책</b>
+              <i>A</i>
+              <em className="lock-blur">이렇게 맞추면 좋아요</em>
+            </li>
+            <li>
+              <b>휴식</b>
+              <i>B</i>
+              <em className="lock-blur">이렇게 맞추면 좋아요</em>
+            </li>
+          </ul>
+          <ol className="outcome-tiers">
+            <li>
+              <b>$0</b> 총점 · 한줄 · 기간 흐름 — 위에 보이는 것
+            </li>
+            <li>
+              <b>$0.99</b> 잠긴 네 줄 — 우리 집 맞추는 법
+            </li>
+            <li>
+              <b>$3.99</b> 사진 넣고 한 장으로 저장
+            </li>
+          </ol>
+        </>
+      )}
+    </aside>
+  );
+}
+
 function HubCard({
   id,
   session,
@@ -1218,11 +1299,11 @@ function Paywall({
       ];
   return (
     <div className="cta pay-explain" id="paid-lock">
-      <img src="/assets/webp/pay-tips.webp" alt="" />
+      <img src="/assets/crayon/tips.svg" alt="" />
       <div className="offer-copy">
-        <p className="offer-kicker">점수는 봤어요. 맞추는 법은 여기 있어요.</p>
-        <h2>우리 집 맞춤 케어팁</h2>
-        <p>놀이 · 식사 · 산책 · 휴식과 사주 풀이. 한 번만 내면 이 결과에서 계속 열려요.</p>
+        <p className="offer-kicker">점수는 이미 나왔어요. 맞추는 법만 잠겨 있어요.</p>
+        <h2>놀이 · 식사 · 산책 · 휴식</h2>
+        <p>우리 집 점수에 맞춘 네 줄과 사주 풀이. 한 번만 내면 이 결과에서 계속 열려요.</p>
         <div className="lock-preview">
           {rows.map((a) => (
             <div className="lock-row" key={a.name}>
@@ -1263,7 +1344,7 @@ function PaidBlock({ data }: { data: HarmonyResult }) {
     <div className="paid-pack">
       {saju && (
         <div className="paid-saju">
-          <img src="/assets/webp/pay-tips.webp" alt="" />
+          <img src="/assets/crayon/tips.svg" alt="" />
           <div>
             <b>{saju.compatTitle || "사주 풀이"}</b>
             {saju.petDesc && <p>{saju.petDesc}</p>}

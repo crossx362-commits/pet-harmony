@@ -19,6 +19,13 @@ function deriveMbti(values: FormValues) {
   return letters.length ? letters.join(" · ") : "";
 }
 
+function nameWithMe(name: string) {
+  const ch = [...name].pop() || "";
+  const code = ch.charCodeAt(0);
+  const batchim = code >= 0xac00 && code <= 0xd7a3 && (code - 0xac00) % 28 !== 0;
+  return batchim ? `${name}과 나` : `${name}와 나`;
+}
+
 export type HarmonyResult = {
   id?: string;
   mode: Mode;
@@ -74,7 +81,7 @@ export function compute(mode: Mode, values: FormValues): HarmonyResult | { error
       mode,
       title: "우리의 새 가족 종합 결과",
       free: {
-        headline: `${values.petName ? `${values.petName}과 나` : "우리 펫과 나"}, 어울림 ${total}점`,
+        headline: `${values.petName ? nameWithMe(values.petName) : "우리 펫과 나"}, 어울림 ${total}점`,
         scores: [
           { label: "생일 기반 케미", score: analysis.score },
           { label: "사주 케미", score: saju.compatScore },
@@ -301,7 +308,7 @@ export function composeHarmony(parts: HarmonyParts): HarmonyResult {
     mode: "overall",
     title: "우리 집 조화도",
     free: {
-      headline: `${petName ? `${petName}과 나` : "우리 펫과 나"}, 조화도 ${total}점`,
+      headline: `${petName ? nameWithMe(petName) : "우리 펫과 나"}, 조화도 ${total}점`,
       scores: [
         { label: "사주 케미", score: sajuScore },
         { label: "생활 준비", score: lifeScore },
@@ -338,4 +345,3 @@ export function composeHarmony(parts: HarmonyParts): HarmonyResult {
 }
 
 export { todayIndex };
-

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { composeHarmony, compute, computeTest, scoreOf } from "./compute.ts";
-import { emptySession, isSkipped, mergeShared, nextRequired, requiredReady, type AuditionSession } from "./session.ts";
+import { demoSession, emptySession, isSkipped, mergeShared, nextRequired, requiredReady, type AuditionSession } from "./session.ts";
 
 const sajuIn = { owner: "1990-01-01", species: "고양이", pet: "" };
 const styleIn = { mbtiEnergy: "E", mbtiStyle: "N", mbtiRoutine: "F" };
@@ -64,4 +64,12 @@ test("optional skip does not block harmony", () => {
   session.tests.dogcat = { status: "skipped", input: {} };
   assert.equal(requiredReady(session), true);
   assert.equal(isSkipped(session, "dogcat"), true);
+});
+
+test("demo session is ready to view harmony", () => {
+  const session = demoSession("demo1");
+  assert.equal(requiredReady(session), true);
+  assert.ok(session.harmony);
+  assert.equal(session.harmony?.mode, "overall");
+  assert.match(String(session.harmony?.free.headline), /두부/);
 });

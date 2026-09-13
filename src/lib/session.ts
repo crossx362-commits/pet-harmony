@@ -35,6 +35,29 @@ export function emptySession(id: string): AuditionSession {
   };
 }
 
+export function demoSession(id = uid()): AuditionSession {
+  const sajuInput: FormValues = {
+    owner: "1994-05-12",
+    species: "강아지",
+    pet: "2022-08-03",
+    petName: "두부",
+  };
+  const styleInput: FormValues = { mbtiEnergy: "E", mbtiStyle: "S", mbtiRoutine: "F" };
+  const lifeInput: FormValues = { lifeTime: "mid", lifeActivity: "out", lifeRoutine: "steady" };
+  const session: AuditionSession = {
+    ...emptySession(id),
+    tests: {
+      saju: { status: "done", input: sajuInput },
+      style: { status: "done", input: styleInput },
+      lifestyle: { status: "done", input: lifeInput },
+    },
+    shared: mergeShared({}, "saju", sajuInput),
+  };
+  const harmony = composeFromSession(session);
+  if (!("error" in harmony)) session.harmony = harmony;
+  return session;
+}
+
 export function isDone(session: AuditionSession, id: TestId) {
   return session.tests[id]?.status === "done";
 }
