@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { composeHarmony, compute, computeTest, scoreOf } from "./compute.ts";
+import { ELEMENT_HEALTH, explainElements, healthNote } from "./harmony.ts";
 import { canOpenHarmony, demoSession, emptySession, isSampleSession, isSkipped, mergeShared, nextRequired, requiredReady, samplePreview, type AuditionSession } from "./session.ts";
 
 const sajuIn = { owner: "1990-01-01", species: "고양이", pet: "" };
@@ -95,4 +96,27 @@ test("sample preview matches the demo score", () => {
   assert.equal(preview.oneLiner, session.harmony?.free.oneLiner);
   assert.equal(preview.care.length, 4);
   assert.ok(preview.care.every((a) => a.teaser && a.teaser !== "이 집에서 이렇게 맞추면 좋아요"));
+});
+
+test("wuxing generating and overcoming pairs", () => {
+  assert.equal(explainElements("목", "화").kind, "상생");
+  assert.match(explainElements("목", "화").why, /불을 살립/);
+  assert.equal(explainElements("화", "목").kind, "상생");
+  assert.equal(explainElements("토", "수").kind, "상극");
+  assert.match(explainElements("토", "수").why, /물을 가둡/);
+  assert.equal(explainElements("수", "토").kind, "상극");
+  assert.equal(explainElements("금", "금").kind, "동일");
+  assert.equal(explainElements("목", "수").kind, "상생");
+});
+
+test("wuxing health maps organs and pair care", () => {
+  assert.equal(ELEMENT_HEALTH.목.organ, "간");
+  assert.equal(ELEMENT_HEALTH.화.care, "놀이");
+  assert.equal(ELEMENT_HEALTH.토.organ, "위");
+  assert.equal(ELEMENT_HEALTH.금.body.includes("피부"), true);
+  assert.equal(ELEMENT_HEALTH.수.care, "휴식");
+  const n = healthNote("수", "토");
+  assert.match(n.pet, /신장/);
+  assert.match(n.owner, /위/);
+  assert.match(n.pair, /휴식|식사/);
 });

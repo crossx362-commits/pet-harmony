@@ -24,10 +24,9 @@
 - 선택 검사는 「안 함」 가능, 점수 필수 아님
 
 ## 아직 운영에서 남은 것 (코드 밖)
-- Vercel 환경변수: PAYPAL_* / SUPABASE_*
-- `/api/health` 에서 paymentConfigured·webhookConfigured true
-- Live 결제 E2E 1회
-- 공개 도메인 1개로 OG·webhook·canonical 통일
+- 이 미리보기 서버는 PayPal Live가 켜져 있습니다 (`paymentConfigured: true`)
+- 웹훅 ID는 아직 없음 (`webhookConfigured: false`) — 캡처는 결제 직후 서버 호출로 동작
+- 공개 Vercel(`petnna-app`)에는 같은 환경변수를 Production에 넣고 Redeploy 해야 합니다
 - 선택 이메일 실발송
 
 ## 가격

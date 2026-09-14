@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Calendar, Cat, Check, ChevronRight, CircleHelp, Clock, Dog, Lock, PawPrint, Users } from "lucide-react";
 import { computeTest, todayIndex, type HarmonyResult, type TestId } from "@/lib/compute";
+import { ELEMENT_HEALTH, explainElements, healthNote, KE_LABEL, SHENG_CHAIN, SHENG_LABEL } from "@/lib/harmony";
 import { todayISO } from "@/lib/dates";
 import {
   ALL_TESTS,
@@ -20,6 +21,7 @@ import {
   canOpenHarmony,
   isSampleSession,
   mergeShared,
+  demoSession,
   samplePreview,
   saveResultLocal,
   saveSession,
@@ -566,9 +568,20 @@ export function PetAudition() {
                   <b>한 장으로 저장</b>
                   <strong>$3.99</strong>
                   <span>팁 포함. 사진 넣고 인쇄·PDF.</span>
+                  <a
+                    className="price-jump"
+                    href="#sample-report"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      document.getElementById("sample-report")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }}
+                  >
+                    샘플 리포트 보기
+                  </a>
                 </div>
               </div>
             </section>
+            <SampleReport />
             <div className="trust-strip">
               <span className="trust-icon" aria-hidden>
                 <PawPrint size={16} />
@@ -847,49 +860,46 @@ export function PetAudition() {
               </div>
             )}
             {result.pdfPaid && (
-              <div className="pdf-actions" id="pdf-offer">
-                <div className="final-step">
-                  <img className="pay-art" src="/assets/art/pdf.webp" alt="" />
-                  <b>사진을 넣고 우리 이야기를 한 장으로 간직해요</b>
-                  <label htmlFor="petPhotoPaid">새 가족 사진 업로드 (선택)</label>
-                  <input
-                    id="petPhotoPaid"
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      const reader = new FileReader();
-                      reader.onload = () => {
-                        setSession((prev) => {
-                          const base = prev || emptySession(resultId);
-                          if (!base.harmony) return prev;
-                          const nextResult = { ...base.harmony, photoData: String(reader.result) };
-                          const next = { ...base, harmony: nextResult };
-                          saveResultLocal(resultId, nextResult);
-                          saveSession(next);
-                          return next;
-                        });
-                      };
-                      reader.readAsDataURL(file);
-                    }}
-                  />
-                  {result.photoData && (
-                    <div className="photo-preview">
-                      <img src={result.photoData} alt="업로드한 펫 사진" />
-                    </div>
-                  )}
+              <>
+                <ReportSheet result={result} photo={typeof result.photoData === "string" ? result.photoData : ""} />
+                <div className="pdf-actions" id="pdf-offer">
+                  <div className="final-step">
+                    <b>사진을 넣고 우리 이야기를 한 장으로 간직해요</b>
+                    <label htmlFor="petPhotoPaid">새 가족 사진 업로드 (선택)</label>
+                    <input
+                      id="petPhotoPaid"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          setSession((prev) => {
+                            const base = prev || emptySession(resultId);
+                            if (!base.harmony) return prev;
+                            const nextResult = { ...base.harmony, photoData: String(reader.result) };
+                            const next = { ...base, harmony: nextResult };
+                            saveResultLocal(resultId, nextResult);
+                            saveSession(next);
+                            return next;
+                          });
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                  </div>
+                  <button type="button" id="save-pdf" onClick={() => window.print()}>
+                    Print / Save as PDF
+                  </button>
+                  <div className="email-delivery">
+                    <strong>
+                      리포트 링크를 이메일로 받을까요? <span>(선택)</span>
+                    </strong>
+                    <EmailRow resultId={resultId} />
+                  </div>
                 </div>
-                <button type="button" id="save-pdf" onClick={() => window.print()}>
-                  Print / Save as PDF
-                </button>
-                <div className="email-delivery">
-                  <strong>
-                    리포트 링크를 이메일로 받을까요? <span>(선택)</span>
-                  </strong>
-                  <EmailRow resultId={resultId} />
-                </div>
-              </div>
+              </>
             )}
             <p className="disclaimer">
               결과 번호: <span>{resultId}</span>
@@ -1273,9 +1283,12 @@ function PaidBlock({ data }: { data: HarmonyResult }) {
   const paid = (data.paid || {}) as {
     areas?: { name: string; tip: string; grade?: string; score?: number }[];
     saju?: { compatTitle?: string; petDesc?: string; ownerDesc?: string; synergyDesc?: string };
+    elements?: { pet?: { dominant?: string }; owner?: { dominant?: string } };
   };
   const areas = paid.areas || [];
   const saju = paid.saju;
+  const petEl = paid.elements?.pet?.dominant || "";
+  const ownerEl = paid.elements?.owner?.dominant || "";
   return (
     <div className="paid-pack">
       {saju && (
@@ -1289,6 +1302,7 @@ function PaidBlock({ data }: { data: HarmonyResult }) {
           </div>
         </div>
       )}
+      {petEl && ownerEl ? <WuxingCycle pet={petEl} owner={ownerEl} /> : null}
       <div className="paid-areas">
         {areas.map((a) => (
           <div className="paid-area" key={a.name}>
@@ -1300,6 +1314,285 @@ function PaidBlock({ data }: { data: HarmonyResult }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function SampleReport() {
+  const harmony = useMemo(() => demoSession("sample").harmony, []);
+  if (!harmony) return null;
+  return (
+    <section className="sample-report" id="sample-report">
+      <div className="what-you-get-heading">
+        <span className="eyebrow">$3.99 사진 리포트 · 샘플</span>
+        <h2>인쇄하면 이렇게 나와요</h2>
+        <p>두부의 샘플입니다. 내 사진과 내 점수는 세 가지를 보고 $3.99를 낸 뒤에 바뀝니다.</p>
+      </div>
+      <ReportSheet result={harmony} photo="/assets/art/family.webp" />
+    </section>
+  );
+}
+
+function splitDesc(text?: string) {
+  const raw = String(text || "").trim();
+  const m = raw.match(/^\[(.+?)\]\s*([\s\S]*)$/);
+  if (m) return { kicker: m[1], body: m[2].trim() };
+  return { kicker: "", body: raw };
+}
+
+function formatBirth(iso?: string) {
+  if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return "";
+  const [y, m, d] = iso.split("-");
+  return `${y}.${m}.${d}`;
+}
+
+const WUXING = ["목", "화", "토", "금", "수"] as const;
+
+function ReportSheet({ result, photo }: { result: HarmonyResult; photo?: string }) {
+  const paid = (result.paid || {}) as {
+    areas?: { name: string; tip: string; grade?: string; score?: number; element?: string }[];
+    saju?: {
+      compatTitle?: string;
+      compatScore?: number;
+      petDesc?: string;
+      ownerDesc?: string;
+      synergyDesc?: string;
+      petSummary?: string;
+      ownerSummary?: string;
+      pastDesc?: string;
+      petBirth?: string;
+      ownerBirth?: string;
+    };
+    relation?: { type?: string; text?: string };
+    elements?: { pet?: { dominant?: string; vec?: Record<string, number> }; owner?: { dominant?: string; vec?: Record<string, number> } };
+    style?: { ownerMbti?: string; scores?: { label: string; score: number }[]; headline?: string };
+    lifestyle?: { scores?: { label: string; score: number }[]; headline?: string };
+  };
+  const areas = paid.areas || [];
+  const saju = paid.saju;
+  const scores = (result.free.scores as { label: string; score: number }[]) || [];
+  const weights = ["40%", "30%", "20%"];
+  const detail = (result.free.harmonyDetail || {}) as { total?: number; petElement?: string; ownerElement?: string };
+  const total = Math.max(0, Math.min(99, Number(detail.total) || 0));
+  const petEl = paid.elements?.pet?.dominant || detail.petElement || "";
+  const ownerEl = paid.elements?.owner?.dominant || detail.ownerElement || "";
+  const petVec = paid.elements?.pet?.vec || {};
+  const ownerVec = paid.elements?.owner?.vec || {};
+  const now = new Date();
+  const periods = [
+    { label: "평생", score: total },
+    { label: "오늘", score: todayIndex(total, petEl, now) },
+    { label: "이번 달", score: todayIndex(total, petEl, new Date(now.getFullYear(), now.getMonth(), 1)) },
+    { label: "올해", score: todayIndex(total, petEl, new Date(now.getFullYear(), 0, 1)) },
+  ];
+  const petDesc = splitDesc(saju?.petDesc);
+  const ownerDesc = splitDesc(saju?.ownerDesc);
+  const issued = now.toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
+  return (
+    <article className="report-sheet" id="report-sheet">
+      <div className="report-frame" aria-hidden />
+      <header className="report-top">
+        <span>펫과나</span>
+        <em>OUR LITTLE FAMILY</em>
+        <span>{issued}</span>
+      </header>
+      <div className="report-hero">
+        <div className="report-polaroid">
+          <img src={photo || "/assets/art/family.webp"} alt="우리 집 사진" />
+        </div>
+        <div className="report-mark">
+          <div className="report-ring" style={{ background: `conic-gradient(#8f4d32 ${total * 3.6}deg, #ead9c8 0)` }}>
+            <div>
+              <b>{total}</b>
+              <small>점</small>
+            </div>
+          </div>
+          <p>{String(result.free.oneLiner || "")}</p>
+        </div>
+      </div>
+      <h2>{String(result.free.headline)}</h2>
+      <p className="report-mix-note">사주 40 · 생활 30 · 스타일 20을 이은 점수예요.</p>
+      <div className="report-bars">
+        {scores.map((s, i) => (
+          <div key={s.label}>
+            <span>
+              {s.label}
+              <i>{weights[i] || ""}</i>
+              <strong>{s.score}</strong>
+            </span>
+            <b>
+              <em style={{ width: `${Math.max(8, Math.min(100, s.score))}%` }} />
+            </b>
+          </div>
+        ))}
+      </div>
+      <div className="report-periods">
+        {periods.map((p, i) => (
+          <span key={p.label} className={i === 0 ? "on" : undefined}>
+            {p.label}
+            <strong>{p.score}</strong>
+          </span>
+        ))}
+      </div>
+      {(saju || paid.relation) && (
+        <div className="report-bond">
+          <strong>
+            {saju?.compatTitle || paid.relation?.type || "우리 집 케미"}
+            {saju?.compatScore ? <em>{saju.compatScore}</em> : null}
+          </strong>
+          <p>{saju?.synergyDesc || paid.relation?.text || ""}</p>
+          <div className="report-wuxing">
+            <WuxingLabel title={`펫 ${petEl}`} vec={petVec} birth={formatBirth(saju?.petBirth)} />
+            <WuxingLabel title={`나 ${ownerEl}`} vec={ownerVec} birth={formatBirth(saju?.ownerBirth)} />
+          </div>
+          {petEl && ownerEl ? <WuxingCycle pet={petEl} owner={ownerEl} /> : null}
+        </div>
+      )}
+      {saju && (
+        <div className="report-saju-grid">
+          <div>
+            <b>{saju.petSummary || "펫"}</b>
+            {petDesc.kicker ? <em>{petDesc.kicker}</em> : null}
+            <p>{petDesc.body}</p>
+          </div>
+          <div>
+            <b>{saju.ownerSummary || "보호자"}</b>
+            {ownerDesc.kicker ? <em>{ownerDesc.kicker}</em> : null}
+            <p>{ownerDesc.body}</p>
+          </div>
+        </div>
+      )}
+      {saju?.pastDesc ? <p className="report-past">{saju.pastDesc}</p> : null}
+      <div className="report-side">
+        {paid.lifestyle?.scores && (
+          <div>
+            <b>{paid.lifestyle.headline || "생활 준비"}</b>
+            <ul>
+              {paid.lifestyle.scores.map((s) => (
+                <li key={s.label}>
+                  {s.label}
+                  <strong>{s.score}</strong>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {paid.style?.scores && (
+          <div>
+            <b>{paid.style.ownerMbti ? `스타일 ${paid.style.ownerMbti}` : paid.style.headline || "보호자 스타일"}</b>
+            <ul>
+              {paid.style.scores.map((s) => (
+                <li key={s.label}>
+                  {s.label}
+                  <strong>{s.score}</strong>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+      {!!areas.length && (
+        <ul className="report-care">
+          {areas.map((a) => (
+            <li key={a.name} data-grade={a.grade}>
+              <header>
+                <b>{a.name}</b>
+                <em>{a.grade}</em>
+                <strong>{a.score ?? ""}</strong>
+              </header>
+              <i>
+                <em style={{ width: `${Math.max(6, Math.min(100, Number(a.score) || 0))}%` }} />
+              </i>
+              <span>{a.tip}</span>
+              {a.element && ELEMENT_HEALTH[a.element as keyof typeof ELEMENT_HEALTH] ? (
+                <small>
+                  {ELEMENT_HEALTH[a.element as keyof typeof ELEMENT_HEALTH].organ} · {ELEMENT_HEALTH[a.element as keyof typeof ELEMENT_HEALTH].body}
+                </small>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
+      <footer className="report-foot">
+        <span className="report-seal" aria-hidden>
+          <PawPrint size={15} strokeWidth={2.2} />
+        </span>
+        <p>사주·오행·건강 연결은 재미와 참고용이에요. 정통 명리·수의사 상담을 대신하지 않습니다. Entertainment only. 펫과나</p>
+      </footer>
+    </article>
+  );
+}
+
+function WuxingLabel({ title, vec, birth }: { title: string; vec: Record<string, number>; birth?: string }) {
+  return (
+    <div className="wuxing">
+      <b>
+        {title}
+        {birth ? <small>{birth}</small> : null}
+      </b>
+      <div>
+        {WUXING.map((el) => (
+          <span key={el} data-on={(vec[el] || 0) >= 2 ? "1" : (vec[el] || 0) === 1 ? "s" : "0"}>
+            {el}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function WuxingCycle({ pet, owner }: { pet: string; owner: string }) {
+  const note = explainElements(pet, owner);
+  const health = healthNote(pet, owner);
+  return (
+    <div className="wuxing-cycle">
+      <p className="cycle-kicker">오행은 이렇게 돌아요</p>
+      <div className="cycle-beads" aria-label="상생">
+        {SHENG_CHAIN.map((el, i) => (
+          <span key={el}>
+            <b data-who={el === pet && el === owner ? "both" : el === pet ? "pet" : el === owner ? "me" : ""}>{el}</b>
+            {i < SHENG_CHAIN.length - 1 ? <i aria-hidden>→</i> : <i aria-hidden>→ 목</i>}
+          </span>
+        ))}
+      </div>
+      <dl>
+        <div>
+          <dt>상생</dt>
+          <dd>{SHENG_LABEL}</dd>
+        </div>
+        <div>
+          <dt>상극</dt>
+          <dd>{KE_LABEL}</dd>
+        </div>
+      </dl>
+      <p className="cycle-ours">
+        <strong>{note.kind}</strong>
+        {note.line} {note.how}
+      </p>
+      <p className="cycle-kicker health">오행과 건강 · 재미 해석</p>
+      <ul className="health-rows">
+        {SHENG_CHAIN.map((el) => {
+          const h = ELEMENT_HEALTH[el];
+          const who = el === pet && el === owner ? "둘" : el === pet ? "펫" : el === owner ? "나" : "";
+          return (
+            <li key={el} data-who={who ? "on" : undefined}>
+              <b>{el}</b>
+              <span>
+                {h.organ} · {h.body}
+              </span>
+              <em>{h.care}</em>
+              {who ? <i>{who}</i> : null}
+            </li>
+          );
+        })}
+      </ul>
+      <p className="cycle-ours">
+        {health.pet}
+        <br />
+        {health.owner}
+        <br />
+        {health.pair}
+      </p>
     </div>
   );
 }

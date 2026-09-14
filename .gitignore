@@ -13,3 +13,6 @@ artifacts
 attachments
 public/assets/webp
 public/assets/crayon
+.env
+.env.*
+!.env.example
