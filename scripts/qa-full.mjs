@@ -37,16 +37,16 @@ try {
   log("home-no-82", !sampleScore.includes("82"), sampleScore);
   const usd = await page.locator(".price-card strong").allInnerTexts();
   log("home-usd", usd.some((t) => t.includes("$0.99")) && usd.some((t) => t.includes("$3.99")), usd.join(" | "));
+  const demoBtn = await page.getByRole("button", { name: "샘플로 먼저 결과 보기" }).count();
+  log("home-no-demo-harmony", demoBtn === 0, String(demoBtn));
   await shot(page, "qa-home");
 
-  await page.getByRole("button", { name: "샘플로 먼저 결과 보기" }).click();
+  await page.evaluate(() => {
+    location.hash = "#/result/skip-me";
+  });
   await page.waitForTimeout(400);
-  const h1 = await page.locator("h1").first().innerText();
-  log("sample-headline-68", h1.includes("68") && h1.includes("두부"), h1);
-  const teasers = await page.locator(".lock-row span").allInnerTexts();
-  log("sample-teasers-distinct", new Set(teasers).size >= 4, teasers.join(" / "));
-  log("sample-no-dummy", teasers.every((t) => !t.includes("이렇게 맞추면 좋아요")), teasers.join(" / "));
-  await shot(page, "qa-harmony");
+  const blocked = await page.locator("h1").first().innerText();
+  log("direct-result-blocked", !blocked.includes("조화도") || blocked.includes("세 가지") || blocked.includes("잘 맞는지") || blocked.includes("사주"), blocked);
 
   await page.getByRole("button", { name: "홈" }).click();
   await page.waitForTimeout(250);

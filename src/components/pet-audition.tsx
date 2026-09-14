@@ -17,9 +17,9 @@ import {
   prefill,
   REQUIRED_TESTS,
   requiredCount,
-  requiredReady,
+  canOpenHarmony,
+  isSampleSession,
   mergeShared,
-  demoSession,
   samplePreview,
   saveResultLocal,
   saveSession,
@@ -214,9 +214,9 @@ export function PetAudition() {
   const resultId = route.id;
   const testId = route.testId;
   const result = session?.harmony || (view === "harmony" ? loadResult(resultId) : null);
-  const doneCount = session ? requiredCount(session) : 0;
-  const ready = session ? requiredReady(session) : false;
-  const upcoming = session ? nextRequired(session) : "saju";
+  const doneCount = session && !isSampleSession(session) ? requiredCount(session) : 0;
+  const ready = canOpenHarmony(session);
+  const upcoming = session && !isSampleSession(session) ? nextRequired(session) : "saju";
 
   const go = (hash: string) => {
     if (location.hash === hash) setRoute(parseHash());
@@ -231,10 +231,10 @@ export function PetAudition() {
   const startAudition = () => {
     const existingId = loadCurrentId();
     const existing = existingId ? loadSession(existingId) : null;
-    const next = existing || emptySession(uid());
+    const next = existing && !isSampleSession(existing) ? existing : emptySession(uid());
     persist(next);
     const first = nextRequired(next) || "saju";
-    if (requiredReady(next)) go("#/hub/" + next.resultId);
+    if (canOpenHarmony(next)) go("#/hub/" + next.resultId);
     else {
       setValues(prefill(next, first));
       setSkipped({});
@@ -243,16 +243,10 @@ export function PetAudition() {
     }
   };
 
-  const startDemo = () => {
-    const next = demoSession();
-    persist(next);
-    go("#/result/" + next.resultId);
-  };
-
   const openHub = () => {
     const existingId = loadCurrentId();
     const existing = existingId ? loadSession(existingId) : null;
-    const next = existing || emptySession(uid());
+    const next = existing && !isSampleSession(existing) ? existing : emptySession(uid());
     persist(next);
     go("#/hub/" + next.resultId);
   };
@@ -267,8 +261,8 @@ export function PetAudition() {
 
   const openHarmony = () => {
     if (!session) return;
-    if (!requiredReady(session)) {
-      setNotice("꼭 볼 세 가지가 아직 남았어요.");
+    if (!canOpenHarmony(session)) {
+      setNotice("꼭 볼 세 가지가 아직 남았어요. 종합은 그때만 열려요.");
       go("#/hub/" + session.resultId);
       return;
     }
@@ -317,30 +311,39 @@ export function PetAudition() {
   useEffect(() => {
     if (!resultId) {
       const current = loadCurrentId();
-      if (current) setSession(loadSession(current));
+      if (current) {
+        const saved = loadSession(current);
+        if (saved && !isSampleSession(saved)) setSession(saved);
+      }
       return;
     }
     const local = loadSession(resultId);
     if (local) {
+      if (isSampleSession(local)) {
+        const live = emptySession(uid());
+        persist(live);
+        if (view === "harmony") go("#/hub/" + live.resultId);
+        else setSession(live);
+        return;
+      }
       setSession(local);
       if (view === "form" && testId) setValues(prefill(local, testId));
-      if (view === "harmony" && !local.harmony && !requiredReady(local)) {
-        go("#/hub/" + resultId);
+      if (view === "harmony") {
+        if (!canOpenHarmony(local)) {
+          go("#/hub/" + resultId);
+          return;
+        }
+        if (!local.harmony) {
+          const composed = composeFromSession(local);
+          if (!("error" in composed)) persist({ ...local, harmony: composed });
+        }
       }
       return;
     }
-    if (view !== "harmony") return;
-    const cached = loadResult(resultId);
-    if (cached) setSession({ ...emptySession(resultId), harmony: cached });
-    fetchResult(resultId).then((remote) => {
-      if (!remote) return;
-      setSession((prev) => {
-        const base = prev && prev.resultId === resultId ? prev : emptySession(resultId);
-        const next = { ...base, harmony: remote };
-        saveSession(next);
-        return next;
-      });
-    });
+    if (view === "harmony") {
+      go("");
+      return;
+    }
   }, [resultId, view, testId]);
 
   useEffect(() => {
@@ -501,10 +504,7 @@ export function PetAudition() {
                   {session && doneCount > 0 ? `이어서 하기 · ${progressLabel}` : "내 점수 보기"}
                   <span aria-hidden> →</span>
                 </button>
-                <button className="hero-demo" type="button" onClick={startDemo}>
-                  샘플로 먼저 결과 보기
-                </button>
-                <p className="hero-sub">사주 40% · 생활 30% · 스타일 20%로 한 점수가 돼요</p>
+                <p className="hero-sub">아래는 샘플이에요. 내 조화도는 세 가지를 봐야 열려요.</p>
               </div>
               <div className="hero-art" aria-hidden>
                 <div className="hero-art-glow" />

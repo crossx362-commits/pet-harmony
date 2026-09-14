@@ -15,6 +15,7 @@ export type AuditionSession = {
   shared: FormValues;
   harmony: HarmonyResult | null;
   createdAt: string;
+  sample?: boolean;
 };
 
 const CURRENT_KEY = "petHarmony:current";
@@ -46,6 +47,7 @@ export function demoSession(id = uid()): AuditionSession {
   const lifeInput: FormValues = { lifeTime: "mid", lifeActivity: "out", lifeRoutine: "steady" };
   const session: AuditionSession = {
     ...emptySession(id),
+    sample: true,
     tests: {
       saju: { status: "done", input: sajuInput },
       style: { status: "done", input: styleInput },
@@ -91,6 +93,18 @@ export function requiredCount(session: AuditionSession) {
 
 export function requiredReady(session: AuditionSession) {
   return requiredCount(session) === REQUIRED_TESTS.length;
+}
+
+export function isSampleSession(session: AuditionSession | null | undefined) {
+  if (!session) return false;
+  if (session.sample) return true;
+  const s = session.shared || {};
+  return s.owner === "1994-05-12" && s.pet === "2022-08-03" && s.petName === "두부";
+}
+
+export function canOpenHarmony(session: AuditionSession | null | undefined) {
+  if (!session || isSampleSession(session)) return false;
+  return requiredReady(session);
 }
 
 export function nextRequired(session: AuditionSession): TestId | null {

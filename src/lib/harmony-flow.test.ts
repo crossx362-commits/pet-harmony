@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { composeHarmony, compute, computeTest, scoreOf } from "./compute.ts";
-import { demoSession, emptySession, isSkipped, mergeShared, nextRequired, requiredReady, samplePreview, type AuditionSession } from "./session.ts";
+import { canOpenHarmony, demoSession, emptySession, isSampleSession, isSkipped, mergeShared, nextRequired, requiredReady, samplePreview, type AuditionSession } from "./session.ts";
 
 const sajuIn = { owner: "1990-01-01", species: "고양이", pet: "" };
 const styleIn = { mbtiEnergy: "E", mbtiStyle: "N", mbtiRoutine: "F" };
@@ -67,12 +67,24 @@ test("optional skip does not block harmony", () => {
   assert.equal(isSkipped(session, "dogcat"), true);
 });
 
-test("demo session is ready to view harmony", () => {
+test("demo session is preview-only and cannot open harmony", () => {
   const session = demoSession("demo1");
+  assert.equal(session.sample, true);
+  assert.equal(isSampleSession(session), true);
   assert.equal(requiredReady(session), true);
+  assert.equal(canOpenHarmony(session), false);
   assert.ok(session.harmony);
-  assert.equal(session.harmony?.mode, "overall");
   assert.match(String(session.harmony?.free.headline), /두부/);
+});
+
+test("live session can open harmony only after three required tests", () => {
+  const session = emptySession("live1");
+  assert.equal(canOpenHarmony(session), false);
+  session.tests.saju = { status: "done", input: sajuIn };
+  session.tests.style = { status: "done", input: styleIn };
+  assert.equal(canOpenHarmony(session), false);
+  session.tests.lifestyle = { status: "done", input: lifeIn };
+  assert.equal(canOpenHarmony(session), true);
 });
 
 test("sample preview matches the demo score", () => {
