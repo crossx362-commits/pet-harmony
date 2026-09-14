@@ -418,7 +418,7 @@ export function PetAudition() {
           .catch(() => {});
       };
       if (!harmony?.unlocked) mount("tips", paypalTips.current);
-      if (!harmony?.pdfPaid) mount("pdf", paypalPdf.current);
+      if (harmony?.unlocked && !harmony?.pdfPaid) mount("pdf", paypalPdf.current);
     })();
     return () => {
       cancelled = true;
@@ -819,7 +819,7 @@ export function PetAudition() {
                 />
               )}
             </div>
-            {!result.pdfPaid && (
+            {result.unlocked && !result.pdfPaid && (
               <div className="pdf-actions" id="pdf-offer">
                 <div className="final-step">
                   <img className="pay-art" src="/assets/art/pdf.webp" alt="" />
@@ -1271,9 +1271,6 @@ function Paywall({
         <div ref={tipsRef} className="paypal-button">
           {!paymentReady && <span className="payment-status">PayPal만 받아요. 연결되면 바로 결제할 수 있어요.</span>}
         </div>
-        <a className="offer-alt" href="#pdf-offer">
-          사진 리포트 $3.99 · 팁 포함
-        </a>
       </div>
     </div>
   );
