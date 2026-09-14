@@ -275,6 +275,13 @@ export function scoreOf(result: HarmonyResult) {
   return Math.round(scores.reduce((sum, item) => sum + item.score, 0) / scores.length);
 }
 
+const CARE_TEASER: Record<string, string> = {
+  놀이: "놀이 리듬을 어떻게 맞출지",
+  식사: "밥 시간과 간식을 어떻게 맞출지",
+  산책: "산책 길이와 횟수를 어떻게 맞출지",
+  휴식: "잠자리와 소음을 어떻게 맞출지",
+};
+
 export type HarmonyParts = {
   saju: HarmonyResult;
   style: HarmonyResult;
@@ -303,12 +310,20 @@ export function composeHarmony(parts: HarmonyParts): HarmonyResult {
     | undefined;
   const hint = String(parts.style.free.ownerMbti || "");
   const rawAreas = (sajuPaid.areas as { name?: string; grade?: string; score?: number; tip?: string }[] | undefined) || [];
-  const carePreview = rawAreas.map((a) => ({ name: String(a.name || ""), grade: String(a.grade || ""), score: Number(a.score || 0) }));
+  const carePreview = rawAreas.map((a) => ({
+    name: String(a.name || ""),
+    grade: String(a.grade || ""),
+    score: Number(a.score || 0),
+    teaser: CARE_TEASER[String(a.name || "")] || "이 집에서 맞추는 법",
+  }));
+  const oneLiner =
+    total >= 80 ? "우리 집과 아주 잘 맞을 가능성이 높아요." : total >= 60 ? "조금만 맞춰가면 좋은 팀이 될 수 있어요." : "생활 루틴을 먼저 천천히 맞춰보면 좋아요.";
   return {
     mode: "overall",
     title: "우리 집 조화도",
     free: {
       headline: `${petName ? nameWithMe(petName) : "우리 펫과 나"}, 조화도 ${total}점`,
+      oneLiner,
       scores: [
         { label: "사주 케미", score: sajuScore },
         { label: "생활 준비", score: lifeScore },

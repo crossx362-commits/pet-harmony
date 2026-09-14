@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { composeHarmony, compute, computeTest, scoreOf } from "./compute.ts";
-import { demoSession, emptySession, isSkipped, mergeShared, nextRequired, requiredReady, type AuditionSession } from "./session.ts";
+import { demoSession, emptySession, isSkipped, mergeShared, nextRequired, requiredReady, samplePreview, type AuditionSession } from "./session.ts";
 
 const sajuIn = { owner: "1990-01-01", species: "고양이", pet: "" };
 const styleIn = { mbtiEnergy: "E", mbtiStyle: "N", mbtiRoutine: "F" };
@@ -37,9 +37,10 @@ test("composeHarmony weights required tests and optional bonuses", () => {
   assert.equal(bonusTotal, Math.min(99, baseTotal + 10));
   assert.match(String(base.free.headline), /두부/);
   assert.deepEqual(withBonus.free.badges, ["강아지·고양이 비교 반영", "세 식구 반영"]);
-  const preview = base.free.carePreview as { name: string; grade: string; tip?: string }[];
+  const preview = base.free.carePreview as { name: string; grade: string; teaser?: string; tip?: string }[];
   assert.ok(preview.length >= 4);
-  assert.ok(preview.every((a) => a.name && a.grade && !("tip" in a && a.tip)));
+  assert.ok(preview.every((a) => a.name && a.grade && a.teaser && !a.tip));
+  assert.ok(String(base.free.oneLiner).length > 8);
 });
 
 test("session progress unlocks after three required tests", () => {
@@ -72,4 +73,14 @@ test("demo session is ready to view harmony", () => {
   assert.ok(session.harmony);
   assert.equal(session.harmony?.mode, "overall");
   assert.match(String(session.harmony?.free.headline), /두부/);
+});
+
+test("sample preview matches the demo score", () => {
+  const session = demoSession("demo1");
+  const preview = samplePreview();
+  const total = (session.harmony?.free.harmonyDetail as { total: number }).total;
+  assert.equal(preview.total, total);
+  assert.equal(preview.oneLiner, session.harmony?.free.oneLiner);
+  assert.equal(preview.care.length, 4);
+  assert.ok(preview.care.every((a) => a.teaser && a.teaser !== "이 집에서 이렇게 맞추면 좋아요"));
 });

@@ -1,4 +1,4 @@
-import { composeHarmony, computeTest, type FormValues, type HarmonyResult, type TestId } from "./compute.ts";
+import { composeHarmony, computeTest, todayIndex, type FormValues, type HarmonyResult, type TestId } from "./compute.ts";
 
 export const REQUIRED_TESTS: TestId[] = ["saju", "style", "lifestyle"];
 export const OPTIONAL_TESTS: TestId[] = ["dogcat", "triangle"];
@@ -56,6 +56,25 @@ export function demoSession(id = uid()): AuditionSession {
   const harmony = composeFromSession(session);
   if (!("error" in harmony)) session.harmony = harmony;
   return session;
+}
+
+export function samplePreview(now = new Date()) {
+  const harmony = demoSession("sample").harmony;
+  const scores = (harmony?.free.scores as { label: string; score: number }[]) || [];
+  const d = (harmony?.free.harmonyDetail || { total: 0, petElement: "" }) as { total: number; petElement: string };
+  const care = (harmony?.free.carePreview as { name: string; grade: string; teaser?: string }[]) || [];
+  return {
+    total: d.total,
+    oneLiner: String(harmony?.free.oneLiner || ""),
+    scores,
+    periods: [
+      { label: "평생", score: d.total },
+      { label: "오늘", score: todayIndex(d.total, d.petElement, now) },
+      { label: "이번 달", score: todayIndex(d.total, d.petElement, new Date(now.getFullYear(), now.getMonth(), 1)) },
+      { label: "올해", score: todayIndex(d.total, d.petElement, new Date(now.getFullYear(), 0, 1)) },
+    ],
+    care,
+  };
 }
 
 export function isDone(session: AuditionSession, id: TestId) {
